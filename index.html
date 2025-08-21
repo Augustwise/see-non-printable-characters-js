@@ -75,24 +75,17 @@
         copy&amp;pasted strings.
       </p>
 
-      <form action="" method="POST" accept-charset="UTF-8">
-        <div style="margin-top: 3em">Please paste the string here:</div>
-        <div>
-          <textarea
-            name="s"
-            id="text-input"
-            rows="8"
-            cols="40"
-            style="width: 100%; box-sizing: border-box"
-            dir="auto"
-          ></textarea>
-        </div>
-        <div>
-          <button type="submit" id="submit-button">
-            Show me the characters
-          </button>
-        </div>
-      </form>
+      <div style="margin-top: 3em">Please paste the string here:</div>
+      <div>
+        <textarea
+          name="s"
+          id="text-input"
+          rows="8"
+          cols="40"
+          style="width: 100%; box-sizing: border-box"
+          dir="auto"
+        ></textarea>
+      </div>
       <div id="output-container"></div>
       <div id="info-container" style="margin: -2.5em 0 4em 0"></div>
 
@@ -231,14 +224,12 @@
 
       document.addEventListener("DOMContentLoaded", () => {
         const textInput = document.getElementById("text-input");
-        const form = document.querySelector("form");
 
         textInput.value =
           "See\u00A0what's hidden in your string\u2026\tor be\u200Bhind\uFEFF";
         ViewChars.processText();
 
-        form.addEventListener("submit", (e) => {
-          e.preventDefault();
+        textInput.addEventListener("input", () => {
           ViewChars.processText();
         });
       });
