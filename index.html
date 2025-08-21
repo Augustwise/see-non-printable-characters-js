@@ -126,7 +126,12 @@
         written or pasted into the box above.
       </p>
       <h2>Source Code</h2>
-      <p>This tool is open source and available on <a href="https://github.com/BurninLeo/see-non-printable-characters">GitHub</a>.</p>
+      <p>
+        This tool is open source and available on
+        <a href="https://github.com/BurninLeo/see-non-printable-characters"
+          >GitHub</a
+        >.
+      </p>
     </div>
     <script>
       class ViewChars {
@@ -163,11 +168,7 @@
             }
           }
 
-          return `
-            ${symbol}
-            <span class="S2Tooltip container">
-                <span class="S2Tooltip tiptext rounded shadow">${desc}</span>
-            </span>`;
+          return `${symbol}<span class="S2Tooltip container"><span class="S2Tooltip tiptext rounded shadow">${desc}</span></span>`;
         }
 
         static text2html(s) {
