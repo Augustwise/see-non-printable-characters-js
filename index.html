@@ -86,6 +86,11 @@
           dir="auto"
         ></textarea>
       </div>
+      <div style="margin: 1em 0;">
+        <button id="export-btn" style="background-color: #237625; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">
+          Export Analysis to TXT
+        </button>
+      </div>
       <div id="output-container"></div>
       <div id="info-container" style="margin: -2.5em 0 4em 0"></div>
 
@@ -166,32 +171,28 @@
 
         static text2html(s) {
           let html = '<div class="output" dir="auto">';
-          let nlc = 0; // Newline controller
+          let nlc = 0;
 
           for (const c of s) {
             if (c === "\r") {
               if (nlc === 0) {
-                nlc = 1; // CR seen
+                nlc = 1;
                 html += this.htmlChar(c);
               } else if (nlc === 1) {
-                // CR after CR
                 html += "<br>" + this.htmlChar(c);
                 nlc = 1;
               } else if (nlc === 2) {
-                // CR after LF
                 html += this.htmlChar(c) + "<br>";
                 nlc = 0;
               }
             } else if (c === "\n") {
               if (nlc === 0) {
-                nlc = 2; // LF seen
+                nlc = 2;
                 html += this.htmlChar(c);
               } else if (nlc === 2) {
-                // LF after LF
                 html += "<br>" + this.htmlChar(c);
                 nlc = 2;
               } else if (nlc === 1) {
-                // LF after CR (CRLF)
                 html += this.htmlChar(c) + "<br>";
                 nlc = 0;
               }
@@ -220,10 +221,157 @@
           const byteCount = new TextEncoder().encode(s).length;
           infoContainer.innerHTML = `${charCount} characters, ${byteCount} bytes`;
         }
+
+        static exportAnalysis() {
+          const textInput = document.getElementById("text-input");
+          const s = textInput.value;
+          
+          if (!s) {
+            alert("Please enter some text to export analysis.");
+            return;
+          }
+
+          const timestamp = new Date().toISOString().replace('T', ' ').substr(0, 19);
+          const charCount = s.length;
+          
+          let report = `=================================================\n`;
+          report += `Unicode Character Analysis Report\n`;
+          report += `Generated: ${timestamp}\n`;
+          report += `Tool: View non-printable unicode characters\n`;
+          report += `=================================================\n\n`;
+          
+          report += `SUMMARY:\n`;
+          report += `- Total characters: ${charCount}\n\n`;
+          
+          const nonPrintableChars = [];
+          const specialChars = [];
+          const regularChars = [];
+          
+          for (let i = 0; i < s.length; i++) {
+            const c = s[i];
+            const codePoint = c.codePointAt(0);
+            const hex = codePoint < 0x10000 
+              ? `U+${codePoint.toString(16).toUpperCase().padStart(4, "0")}`
+              : `U+${codePoint.toString(16).toUpperCase()}`;
+            
+            const charInfo = {
+              char: c,
+              position: i + 1,
+              codePoint: codePoint,
+              hex: hex,
+              description: this.getCharDescription(c, codePoint)
+            };
+            
+            if (this.isNonPrintable(c, codePoint)) {
+              nonPrintableChars.push(charInfo);
+            } else if (this.isSpecialChar(c, codePoint)) {
+              specialChars.push(charInfo);
+            } else {
+              regularChars.push(charInfo);
+            }
+          }
+          
+          if (nonPrintableChars.length > 0) {
+            report += `NON-PRINTABLE/INVISIBLE CHARACTERS FOUND (${nonPrintableChars.length}):\n`;
+            report += `${'='.repeat(50)}\n`;
+            nonPrintableChars.forEach(char => {
+              report += `Position ${char.position}: ${char.description} (${char.hex})\n`;
+            });
+            report += `\n`;
+          }
+          
+          if (specialChars.length > 0) {
+            report += `SPECIAL CHARACTERS (${specialChars.length}):\n`;
+            report += `${'='.repeat(30)}\n`;
+            specialChars.forEach(char => {
+              report += `Position ${char.position}: "${char.char}" - ${char.description} (${char.hex})\n`;
+            });
+            report += `\n`;
+          }
+          
+          report += `FULL CHARACTER BREAKDOWN:\n`;
+          report += `${'='.repeat(30)}\n`;
+          for (let i = 0; i < s.length; i++) {
+            const c = s[i];
+            const codePoint = c.codePointAt(0);
+            const hex = codePoint < 0x10000 
+              ? `U+${codePoint.toString(16).toUpperCase().padStart(4, "0")}`
+              : `U+${codePoint.toString(16).toUpperCase()}`;
+            const desc = this.getCharDescription(c, codePoint);
+            
+            if (c === '\n') {
+              report += `${i + 1}: [LF] ${desc} (${hex})\n`;
+            } else if (c === '\r') {
+              report += `${i + 1}: [CR] ${desc} (${hex})\n`;
+            } else if (c === '\t') {
+              report += `${i + 1}: [TAB] ${desc} (${hex})\n`;
+            } else if (c === ' ') {
+              report += `${i + 1}: [SPACE] ${desc} (${hex})\n`;
+            } else if (this.isNonPrintable(c, codePoint)) {
+              report += `${i + 1}: [INVISIBLE] ${desc} (${hex})\n`;
+            } else {
+              report += `${i + 1}: "${c}" ${desc} (${hex})\n`;
+            }
+          }
+          
+          report += `\n${'='.repeat(50)}\n`;
+          report += `End of Analysis Report\n`;
+          
+          const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `unicode-analysis-${timestamp.replace(/[: ]/g, '-')}.txt`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+        
+        static getCharDescription(c, codePoint) {
+          if (c === '\r') return 'Carriage Return';
+          if (c === '\n') return 'Line Feed';
+          if (c === '\t') return 'Horizontal Tab';
+          if (c === ' ') return 'Space';
+          if (codePoint === 0x00A0) return 'Non-Breaking Space';
+          if (codePoint === 0x200B) return 'Zero Width Space';
+          if (codePoint === 0x200C) return 'Zero Width Non-Joiner';
+          if (codePoint === 0x200D) return 'Zero Width Joiner';
+          if (codePoint === 0xFEFF) return 'Zero Width No-Break Space (BOM)';
+          if (codePoint === 0x2026) return 'Horizontal Ellipsis';
+          if (codePoint >= 0x2000 && codePoint <= 0x200F) return 'Unicode Space/Format Character';
+          if (codePoint >= 0x202A && codePoint <= 0x202E) return 'Bidirectional Format Character';
+          if (codePoint >= 0x2060 && codePoint <= 0x206F) return 'Unicode Format Character';
+          
+          if (codePoint < 32 || codePoint === 127) return 'Control Character';
+          if (codePoint >= 0x80 && codePoint <= 0x9F) return 'C1 Control Character';
+          
+          return 'Regular Character';
+        }
+        
+        static isNonPrintable(c, codePoint) {
+          if (codePoint < 32 || codePoint === 127) return true;
+          if (codePoint >= 0x80 && codePoint <= 0x9F) return true;
+          
+          if (codePoint === 0x00A0) return true;
+          if (codePoint >= 0x200B && codePoint <= 0x200F) return true;
+          if (codePoint >= 0x202A && codePoint <= 0x202E) return true;
+          if (codePoint >= 0x2060 && codePoint <= 0x206F) return true;
+          if (codePoint === 0xFEFF) return true;
+          
+          return false;
+        }
+        
+        static isSpecialChar(c, codePoint) {
+          if (c === ' ' || c === '\t' || c === '\n' || c === '\r') return true;
+          if (codePoint === 0x2026) return true;
+          return false;
+        }
       }
 
       document.addEventListener("DOMContentLoaded", () => {
         const textInput = document.getElementById("text-input");
+        const exportBtn = document.getElementById("export-btn");
 
         textInput.value =
           "See\u00A0what's hidden in your string\u2026\tor be\u200Bhind\uFEFF";
@@ -231,6 +379,10 @@
 
         textInput.addEventListener("input", () => {
           ViewChars.processText();
+        });
+
+        exportBtn.addEventListener("click", () => {
+          ViewChars.exportAnalysis();
         });
       });
     </script>
