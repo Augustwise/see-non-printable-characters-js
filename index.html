@@ -3,9 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <title>View non-printable unicode characters</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <style>
       body {
-        font-family: Helvetica, Arial, sans-serif;
+        font-family: 'Roboto', sans-serif;
         background-color: #eeeeee;
       }
       div.main {
@@ -65,6 +68,10 @@
         display: block;
         text-indent: 0;
       }
+
+      button {
+        font-family: 'Roboto', sans-serif;
+      }
     </style>
   </head>
   <body>
@@ -86,10 +93,18 @@
           dir="auto"
         ></textarea>
       </div>
-      <div style="margin: 1em 0;">
-        <button id="export-btn" style="background-color: #237625; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">
+      <div style="margin: 1em 0; display: flex; align-items: flex-start;">
+        <button id="export-btn" style="background-color: #716f98; color: white; padding: 10px 20px; border: none; border-radius: 2px; cursor: pointer; font-size: 14px;">
           Export Analysis to TXT
         </button>
+        <div style="display: flex; flex-direction: column; margin-left: 10px;">
+          <button id="clean-btn" style="background-color: #716f98; color: white; padding: 10px 20px; border: none; border-radius: 2px; cursor: pointer; font-size: 14px;">
+            Clean Text
+          </button>
+          <button id="copy-btn" style="background-color: #716f98; color: white; padding: 10px 20px; border: none; border-radius: 2px; cursor: pointer; font-size: 14px; margin-top: 10px;">
+            Copy Text
+          </button>
+        </div>
       </div>
       <div id="output-container"></div>
       <div id="info-container" style="margin: -2.5em 0 4em 0"></div>
@@ -367,11 +382,23 @@
           if (codePoint === 0x2026) return true;
           return false;
         }
+        
+        static cleanText() {
+          const textInput = document.getElementById("text-input");
+          let s = textInput.value;
+
+          const cleanedText = s.replace(/[\u0000-\u001F\u007F-\u009F\u00A0\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g, '');
+
+          textInput.value = cleanedText;
+          this.processText();
+        }
       }
 
       document.addEventListener("DOMContentLoaded", () => {
         const textInput = document.getElementById("text-input");
         const exportBtn = document.getElementById("export-btn");
+        const cleanBtn = document.getElementById("clean-btn");
+        const copyBtn = document.getElementById("copy-btn");
 
         textInput.value =
           "See\u00A0what's hidden in your string\u2026\tor be\u200Bhind\uFEFF";
@@ -383,6 +410,21 @@
 
         exportBtn.addEventListener("click", () => {
           ViewChars.exportAnalysis();
+        });
+        
+        cleanBtn.addEventListener("click", () => {
+          ViewChars.cleanText();
+        });
+
+        copyBtn.addEventListener("click", () => {
+          const textInput = document.getElementById("text-input");
+          textInput.select();
+          document.execCommand("copy");
+          
+          copyBtn.textContent = "Copied!";
+          setTimeout(() => {
+            copyBtn.textContent = "Copy Text";
+          }, 1500);
         });
       });
     </script>
